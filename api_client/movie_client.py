@@ -1,0 +1,41 @@
+import requests
+class MovieClient:
+    def __init__(self):
+        self.base_url = "http://localhost:8080"
+        self.session = requests.Session()
+    
+    def search_movies(self,  searchText=None):
+        url = f"{self.base_url}/movie"
+        print(f"Searching for movies: {searchText}")
+        query_params = {"searchText": searchText} if searchText else {}
+        response = self.session.get(url, params=query_params)
+        return response.json()
+
+    def get_movie_details(self, movieId:str):
+        url = f"{self.base_url}/movie/{movieId}"
+        print(f"Searching for movie details for movie id: {movieId}")
+        response = self.session.get(url)
+        return response.json()
+
+    def get_movie_shows(self, movieId:str,time:str=None):
+        url = f"{self.base_url}/movie/{movieId}/shows"
+        print(f"Searching for movie shows for movie id: {movieId}")
+        response = self.session.get(url)
+        return response.json()
+    
+    def get_seat_availability(self, showId:str):
+        url = f"{self.base_url}/movie/seats/{showId}"
+        print(f"Searching seat availibility for show id: {showId}")
+        response = self.session.get(url)
+        return response.json()
+
+    def book_movie(self, showId: str, noOfSeats: int, seatNumbers: list[str]):
+        url = f"{self.base_url}/movie/book"
+        body = {
+            "showId": showId,
+            "noOfSeats": noOfSeats,
+            "seatNumbers": seatNumbers
+        }
+        print(f"Booking movie for id: {showId}")
+        response = self.session.post(url, json=body)  # ✅ important
+        return response.json()
