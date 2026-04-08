@@ -39,3 +39,27 @@ class MovieClient:
         print(f"Booking movie for id: {showId}")
         response = self.session.post(url, json=body)  # ✅ important
         return response.json()
+
+    def get_user_state(self, user_token:str):
+        url = f"{self.base_url}/state"
+        print(f"Searching state for user")
+        headers = {
+        "Authorization": f"Bearer {user_token}"
+        }
+        response = self.session.get(url,headers=headers)
+        return response.json()
+        
+    def update_user_state(self, state,user_token:str):
+        url = f"{self.base_url}/state"
+        print(f"Updating state for user")
+        headers = {
+        "Authorization": f"Bearer {user_token}"
+        }
+        response = self.session.post(url, json=state,headers=headers)  # ✅ important
+        return response.json()
+    
+    def get_booking(self, bookingId:str):
+        url = f"{self.base_url}/movie/book/{bookingId}"
+        print(f"Getting booking for booking id: {bookingId}")
+        response = self.session.get(url)
+        return response.json()

@@ -21,7 +21,7 @@ def call_llm(query: str):
             "Content-Type": "application/json",
         },
         data=json.dumps({
-            "model": "openai/gpt-4o-mini",
+            "model": "openrouter/free",
             "messages": [
                 {
                     "role": "system",
@@ -107,7 +107,7 @@ def call_llm(query: str):
 
                         ### OUTPUT FORMAT:
                         {
-                        "intent": "search_all_movies | movie_show_timetable | query_seat_availability | book_movie | small_talk | unknown | unsupported_feature",
+                        "intent": "search_all_movies | movie_show_timetable | query_seat_availability | book_movie | get_booking | small_talk | unknown | unsupported_feature",
                         "movie": "string or null",
                         "time": "ISO datetime or null",
                         "noOfSeats": number or null,
@@ -223,6 +223,16 @@ def call_llm(query: str):
                         "noOfSeats": null,
                         "seatNumbers": null
                         }
+                        
+                        User: "Get my booking"
+                        Output:
+                        {
+                        "intent": "get_booking",
+                        "movie": null,
+                        "time": null,
+                        "noOfSeats": null,
+                        "seatNumbers": null
+                        }
                 """
                 },
                 {"role": "user", "content": query}
@@ -244,7 +254,7 @@ def generate_chatbot_response(o: OrchastratorResponse, q:str):
                 "Content-Type": "application/json",
             },
             data=json.dumps({
-                "model": "openai/gpt-4o-mini",  # smaller + cheaper model for formatting
+                "model": "openrouter/free",  # smaller + cheaper model for formatting
                 "messages": [
                     {
                         "role": "system",
@@ -332,6 +342,19 @@ def generate_chatbot_response(o: OrchastratorResponse, q:str):
                                 Example:
                                 "I’m not able to help with that yet, but I can help you find movies, check showtimes, and book tickets. Let me know what you’d like to do!"
 
+                                9. get_booking:
+                                Retrieve booking details for the user
+                                If bookingId is provided → fetch that specific booking
+                                If not → return user’s recent bookings or ask for booking ID
+                                Handle missing data gracefully
+                                Keep response concise and helpful
+
+                                Example (with bookingId):
+                                “Here are your booking details: 2 seats for Oppenheimer at 7:30 PM. Enjoy your movie!”
+                                
+                                Example (no bookings found):
+                                “I couldn’t find any bookings for you. Would you like to book a movie instead?”
+                                
                                 ### ADDITIONAL GUIDELINES:
                                 - Do not assume or invent any missing details
                                 - Do not mention internal fields like booking_id, payment_id, etc.
@@ -406,7 +429,7 @@ async def process_query(query: str, user_token: str = None, userInput: dict = No
         intent = json.loads(intent_json)
 
         # call backend APIs
-        o = orchastrator(intent, userInput)
+        o = orchastrator(user_token, intent, userInput)
         
         chat_response = generate_chatbot_response(o, query)
             
