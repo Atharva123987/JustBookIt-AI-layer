@@ -7,13 +7,14 @@ app = FastAPI(title="Movie Booking AI Agent")
 origins = [
     "http://localhost:5173",  # React frontend (Vite dev server)
     "http://127.0.0.1:5173",  # sometimes vite uses this
+    "http://0.0.0.0",  # sometimes vite uses this
 ]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,       # or ["*"] for all origins (not recommended for prod)
+    allow_origins=["*"],  # allow all for now
     allow_credentials=True,
-    allow_methods=["*"],         # allow all methods: GET, POST, etc.
-    allow_headers=["*"],         # allow all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # include routes
