@@ -21,7 +21,7 @@ def call_llm(query: str):
             "Content-Type": "application/json",
         },
         data=json.dumps({
-            "model": "openrouter/free",
+            "model": "openai/gpt-4o-mini",
             "messages": [
                 {
                     "role": "system",
@@ -254,7 +254,7 @@ def generate_chatbot_response(o: OrchastratorResponse, q:str):
                 "Content-Type": "application/json",
             },
             data=json.dumps({
-                "model": "openrouter/free",  # smaller + cheaper model for formatting
+                "model": "openai/gpt-4o-mini",  # smaller + cheaper model for formatting
                 "messages": [
                     {
                         "role": "system",
