@@ -1,7 +1,13 @@
 import requests
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
+BACKEND_URL = os.getenv("BACKEND_URL")
 class MovieClient:
     def __init__(self):
-        self.base_url = "http://localhost:8080"
+        self.base_url = BACKEND_URL
         self.session = requests.Session()
     
     def search_movies(self,  searchText=None):
