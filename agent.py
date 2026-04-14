@@ -43,7 +43,6 @@ def call_llm(query: str):
                         book_movie
                         small_talk
                         unknown
-                        unsupported_feature
 
                         ---
 
@@ -107,7 +106,7 @@ def call_llm(query: str):
 
                         ### OUTPUT FORMAT:
                         {
-                        "intent": "search_all_movies | movie_show_timetable | query_seat_availability | book_movie | get_booking | small_talk | unknown | unsupported_feature",
+                        "intent": "search_all_movies | movie_show_timetable | query_seat_availability | book_movie | get_booking | small_talk | unknown",
                         "movie": "string or null",
                         "time": "ISO datetime or null",
                         "noOfSeats": number or null,
@@ -119,10 +118,24 @@ def call_llm(query: str):
                         ### EXAMPLES:
 
                         User: "Show all movies"
+                        User: "Show me all movies near me."
+                        User: "Show me movies"
+                        User: "Show me all movies" etc.
                         Output:
                         {
                         "intent": "search_all_movies",
                         "movie": null,
+                        "time": null,
+                        "noOfSeats": null,
+                        "seatNumbers": null
+                        }
+
+                        ---
+                        User: "Show batman movies"
+                        Output:
+                        {
+                        "intent": "search_all_movies",
+                        "movie": "batman",
                         "time": null,
                         "noOfSeats": null,
                         "seatNumbers": null
@@ -214,15 +227,6 @@ def call_llm(query: str):
 
                         ---
 
-                        User: "Can you get me all the theatres near me?"
-                        Output:
-                        {
-                        "intent": "unsupported_feature",
-                        "movie": null,
-                        "time": null,
-                        "noOfSeats": null,
-                        "seatNumbers": null
-                        }
                         
                         User: "Get my booking"
                         Output:
@@ -335,14 +339,8 @@ def generate_chatbot_response(o: OrchastratorResponse, q:str):
                                 User - "Who are you?"
                                 Chatbot - "I’m your movie booking assistant! I can help you find movies, check showtimes, and book tickets."
 
-                                8. unsupported_feature:
-                                - Politely inform the user that this feature is not available yet
-                                - Suggest what the assistant CAN do
-                                - Keep tone helpful and forward-looking
-                                Example:
-                                "I’m not able to help with that yet, but I can help you find movies, check showtimes, and book tickets. Let me know what you’d like to do!"
 
-                                9. get_booking:
+                                8. get_booking:
                                 Retrieve booking details for the user
                                 If bookingId is provided → fetch that specific booking
                                 If not → return user’s recent bookings or ask for booking ID
