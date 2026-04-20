@@ -165,15 +165,13 @@ def orchastrator(user_token, llmIntent, userInput, device_id) -> OrchastratorRes
         )
 
     if intent == "book_movie":
-        if not state.movie:
-            update_state(user_token, state,device_id)
-            return OrchastratorResponse({"missing_field": "movie"}, "need_more_info")
-
         if not state.noOfSeats:
             update_state(user_token, state,device_id)
             return OrchastratorResponse({"missing_field": "noOfSeats"}, "need_more_info")
 
         if not state.movieId:
+            if not state.movie:
+                return OrchastratorResponse({"missing_field": "movie"}, "need_more_info")
             res = mov.search_movies(state.movie)
             state.SetMovieId(res["data"]["movies"][0]["id"])
 
