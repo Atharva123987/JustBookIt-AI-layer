@@ -46,20 +46,22 @@ class MovieClient:
         response = self.session.post(url, json=body)  # ✅ important
         return response.json()
 
-    def get_user_state(self, user_token:str):
+    def get_user_state(self, user_token:str, device_id: str):
         url = f"{self.base_url}/state"
         print(f"Searching state for user")
         headers = {
-        "Authorization": f"Bearer {user_token}"
+        "Authorization": f"Bearer {user_token}",
+        "X-Device-Id": device_id
         }
         response = self.session.get(url,headers=headers)
         return response.json()
         
-    def update_user_state(self, state,user_token:str):
+    def update_user_state(self, state,user_token:str, device_id:str):
         url = f"{self.base_url}/state"
         print(f"Updating state for user")
         headers = {
-        "Authorization": f"Bearer {user_token}"
+        "Authorization": f"Bearer {user_token}",
+        "X-Device-Id": device_id
         }
         response = self.session.post(url, json=state,headers=headers)  # ✅ important
         return response.json()

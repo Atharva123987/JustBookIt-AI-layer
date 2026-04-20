@@ -409,7 +409,7 @@ class ProcessQueryResponse:
         self.intent = intent
         self.chat_response = chat_response
 
-async def process_query(query: str, user_token: str = None, userInput: dict = None) -> ProcessQueryResponse:
+async def process_query(query: str, user_token: str = None, userInput: dict = None,device_id:str = None) -> ProcessQueryResponse:
     try:
         intent_json = call_llm(query)
         print(f"Raw LLM response: {intent_json}")
@@ -420,7 +420,7 @@ async def process_query(query: str, user_token: str = None, userInput: dict = No
         intent = json.loads(intent_json)
 
         # call backend APIs
-        o = orchastrator(user_token, intent, userInput)
+        o = orchastrator(user_token, intent, userInput, device_id)
         
         chat_response = generate_chatbot_response(o, query)
             

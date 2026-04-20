@@ -13,14 +13,14 @@ def safe_get(obj, key):
             return None
         return obj.get(key) if isinstance(obj, dict) else getattr(obj, key, None)
 
-def get_state(user_token):
-    res = mov.get_user_state(user_token)
+def get_state(user_token, device_id):
+    res = mov.get_user_state(user_token, device_id)
     data = res.get("data", {}) if res else {}
     return State.from_dict(data)
 
 
-def update_state(user_token, state):
-    mov.update_user_state(state.to_dict(),user_token)
+def update_state(user_token, state, device_id):
+    mov.update_user_state(state.to_dict(),user_token,device_id)
 
 def should_reset(old_intent, new_intent):
     INVALID = {"unknown", "small_talk", "unsupported_feature"}
@@ -73,8 +73,8 @@ class State:
         s.bookingId = data.get("bookingId")
         return s    
     
-def orchastrator(user_token, llmIntent, userInput) -> OrchastratorResponse:
-    state = get_state(user_token)
+def orchastrator(user_token, llmIntent, userInput, device_id) -> OrchastratorResponse:
+    state = get_state(user_token,device_id)
 
     intentFromLLM = llmIntent.get("intent")
 
@@ -106,16 +106,16 @@ def orchastrator(user_token, llmIntent, userInput) -> OrchastratorResponse:
 
     # ---- handle intents ----
     if intent in {"unknown", "small_talk", "unsupported_feature"}:
-        update_state(user_token, state)
+        update_state(user_token, state,device_id)
         return OrchastratorResponse({}, intent)
 
     if intent == "search_all_movies":
         res = mov.search_movies(state.movie)
-        update_state(user_token, state)
+        update_state(user_token, state,device_id)
         return OrchastratorResponse(res, intent)
 
     if intent == "need_more_info":
-        update_state(user_token, state)
+        update_state(user_token, state,device_id)
         return OrchastratorResponse(
             {"missing_fields": llmIntent.get("missing_fields")},
             intent,
@@ -124,7 +124,7 @@ def orchastrator(user_token, llmIntent, userInput) -> OrchastratorResponse:
     if intent == "movie_show_timetable":
         if not state.movieId:
             if not state.movie:
-                update_state(user_token, state)
+                update_state(user_token, state,device_id)
                 return OrchastratorResponse({"missing_field": "movie"}, "need_more_info")
 
             res = mov.search_movies(state.movie)
@@ -134,7 +134,7 @@ def orchastrator(user_token, llmIntent, userInput) -> OrchastratorResponse:
         res2 = mov.get_movie_shows(state.movieId)
 
         state.SetIntent("unknown")
-        update_state(user_token, state)
+        update_state(user_token, state,device_id)
 
         return OrchastratorResponse(
             {"movie_details": res1, "show_timings": res2},
@@ -143,7 +143,7 @@ def orchastrator(user_token, llmIntent, userInput) -> OrchastratorResponse:
 
     if intent == "query_seat_availability":
         if not state.movie:
-            update_state(user_token, state)
+            update_state(user_token, state,device_id)
             return OrchastratorResponse({"missing_field": "movie"}, "need_more_info")
 
         if not state.movieId:
@@ -157,7 +157,7 @@ def orchastrator(user_token, llmIntent, userInput) -> OrchastratorResponse:
         res = mov.get_seat_availability(state.showId)
 
         state.SetIntent("unknown")
-        update_state(user_token, state)
+        update_state(user_token, state,device_id)
 
         return OrchastratorResponse(
             {"available_seats": count_available_seats(res)},
@@ -166,11 +166,11 @@ def orchastrator(user_token, llmIntent, userInput) -> OrchastratorResponse:
 
     if intent == "book_movie":
         if not state.movie:
-            update_state(user_token, state)
+            update_state(user_token, state,device_id)
             return OrchastratorResponse({"missing_field": "movie"}, "need_more_info")
 
         if not state.noOfSeats:
-            update_state(user_token, state)
+            update_state(user_token, state,device_id)
             return OrchastratorResponse({"missing_field": "noOfSeats"}, "need_more_info")
 
         if not state.movieId:
@@ -183,7 +183,7 @@ def orchastrator(user_token, llmIntent, userInput) -> OrchastratorResponse:
 
         res = mov.book_movie(state.showId, state.noOfSeats, state.seatNumbers)
         state = State()
-        update_state(user_token, state)
+        update_state(user_token, state,device_id)
         return OrchastratorResponse(res, intent)
 
     if intent == "get_booking":
