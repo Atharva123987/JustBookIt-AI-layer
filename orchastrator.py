@@ -190,6 +190,6 @@ def orchastrator(user_token, llmIntent, userInput, device_id) -> OrchastratorRes
 
         res = mov.get_booking(bookingId)
         state.SetIntent("unknown")
-        update_state(user_token,state)
+        update_state(user_token,state,device_id)
         return OrchastratorResponse(res, intent)
     raise Exception(f"Intent '{intent}' unhandled")
