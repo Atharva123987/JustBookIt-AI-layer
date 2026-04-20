@@ -39,7 +39,6 @@ def call_llm(query: str):
                         ### INTENTS:
                         search_all_movies
                         movie_show_timetable
-                        query_seat_availability
                         book_movie
                         small_talk
                         unknown
@@ -87,7 +86,6 @@ def call_llm(query: str):
 
                         - search_all_movies → user wants to browse/search movies
                         - movie_show_timetable → user wants show timings (even if movie/time missing)
-                        - query_seat_availability → user wants to check seats
                         - book_movie → user wants to book tickets
                         - small_talk → greetings, thanks, personal questions
                         - unsupported_feature → valid request but not supported (e.g. theatres near me)
@@ -106,7 +104,7 @@ def call_llm(query: str):
 
                         ### OUTPUT FORMAT:
                         {
-                        "intent": "search_all_movies | movie_show_timetable | query_seat_availability | book_movie | get_booking | small_talk | unknown",
+                        "intent": "search_all_movies | movie_show_timetable | book_movie | get_booking | small_talk | unknown",
                         "movie": "string or null",
                         "time": "ISO datetime or null",
                         "noOfSeats": number or null,
@@ -300,11 +298,6 @@ def generate_chatbot_response(o: OrchastratorResponse, q:str):
 
                                 ---
 
-                                3. query_seat_availability:
-                                - Example tone:
-                                "Here’s the current seat availability for this show."
-
-                                ---
 
                                 4. book_movie:
                                 - If booking is created:

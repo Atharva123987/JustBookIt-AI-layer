@@ -86,12 +86,7 @@ def orchastrator(user_token, llmIntent, userInput) -> OrchastratorResponse:
     showId = safe_get(userInput, "showId")
     bookingId = safe_get(userInput, "bookingId")
 
-    # ---- update state ----
-    if movie: state.SetMovie(movie)
-    if noOfSeats: state.SetNoOfSeats(noOfSeats)
-    if seatNumbers: state.SetSeatNumbers(seatNumbers)
-    if movieId: state.SetMovieId(movieId)
-    if showId: state.SetShowId(showId)
+    
 
     INVALID_INTENTS = {"unknown", "small_talk", "unsupported_feature"}
 
@@ -101,9 +96,15 @@ def orchastrator(user_token, llmIntent, userInput) -> OrchastratorResponse:
 
     intent = state.intent
     print("state", state.__dict__)
+    
+    # ---- update state ----
+    if movie: state.SetMovie(movie)
+    if noOfSeats: state.SetNoOfSeats(noOfSeats)
+    if seatNumbers: state.SetSeatNumbers(seatNumbers)
+    if movieId: state.SetMovieId(movieId)
+    if showId: state.SetShowId(showId)
 
     # ---- handle intents ----
-
     if intent in {"unknown", "small_talk", "unsupported_feature"}:
         update_state(user_token, state)
         return OrchastratorResponse({}, intent)
@@ -150,7 +151,7 @@ def orchastrator(user_token, llmIntent, userInput) -> OrchastratorResponse:
             state.SetMovieId(res["data"]["movies"][0]["id"])
 
         if not state.showId:
-            res2 = mov.get_movie_shows(state.movieId, state.time)
+            res2 = mov.get_movie_shows(state.movieId)
             state.SetShowId(res2["data"][0]["shows"][0]["3D"][0]["id"])
 
         res = mov.get_seat_availability(state.showId)
@@ -177,7 +178,7 @@ def orchastrator(user_token, llmIntent, userInput) -> OrchastratorResponse:
             state.SetMovieId(res["data"]["movies"][0]["id"])
 
         if not state.showId:
-            res2 = mov.get_movie_shows(state.movieId, state.time)
+            res2 = mov.get_movie_shows(state.movieId)
             state.SetShowId(res2["data"][0]["shows"][0]["3D"][0]["id"])
 
         res = mov.book_movie(state.showId, state.noOfSeats, state.seatNumbers)

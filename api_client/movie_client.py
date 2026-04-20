@@ -23,7 +23,7 @@ class MovieClient:
         response = self.session.get(url)
         return response.json()
 
-    def get_movie_shows(self, movieId:str,time:str=None):
+    def get_movie_shows(self, movieId:str):
         url = f"{self.base_url}/movie/{movieId}/shows"
         print(f"Searching for movie shows for movie id: {movieId}")
         response = self.session.get(url)
