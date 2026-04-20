@@ -190,6 +190,7 @@ def call_llm(query: str):
                         ---
 
                         User: "Book 3 tickets"
+                        User: "Complete payment"
                         Output:
                         {
                         "intent": "book_movie",
@@ -208,6 +209,16 @@ def call_llm(query: str):
                         "movie": "Dune",
                         "time": null,
                         "noOfSeats": null,
+                        "seatNumbers": null
+                        }
+                        
+                        User: "3"
+                        Output:
+                        {
+                        "intent": "unknown",
+                        "movie": null,
+                        "time": null,
+                        "noOfSeats": 3,
                         "seatNumbers": null
                         }
 
@@ -235,6 +246,8 @@ def call_llm(query: str):
                         "noOfSeats": null,
                         "seatNumbers": null
                         }
+                        
+                        
                 """
                 },
                 {"role": "user", "content": query}
