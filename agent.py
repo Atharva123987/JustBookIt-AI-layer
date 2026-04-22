@@ -39,6 +39,7 @@ def call_llm(query: str):
                         ### INTENTS:
                         search_all_movies
                         movie_show_timetable
+                        query_seats
                         book_movie
                         small_talk
                         unknown
@@ -86,6 +87,7 @@ def call_llm(query: str):
 
                         - search_all_movies → user wants to browse/search movies
                         - movie_show_timetable → user wants show timings (even if movie/time missing)
+                        - query_seats → user wants to select seats or view seating layout for a show
                         - book_movie → user wants to book tickets
                         - small_talk → greetings, thanks, personal questions
                         - unsupported_feature → valid request but not supported (e.g. theatres near me)
@@ -104,7 +106,7 @@ def call_llm(query: str):
 
                         ### OUTPUT FORMAT:
                         {
-                        "intent": "search_all_movies | movie_show_timetable | book_movie | get_booking | small_talk | unknown",
+                        "intent": "search_all_movies | movie_show_timetable | query_seats | book_movie | get_booking | small_talk | unknown",
                         "movie": "string or null",
                         "time": "ISO datetime or null",
                         "noOfSeats": number or null,
@@ -188,6 +190,18 @@ def call_llm(query: str):
                         }
 
                         ---
+                        
+                        User: "Show seats"
+                        Output:
+                        {
+                        "intent": "query_seats",
+                        "movie": null,
+                        "time": null,
+                        "noOfSeats": null,
+                        "seatNumbers": null
+                        }
+
+                        ---
 
                         User: "Book 3 tickets"
                         User: "Complete payment"
@@ -220,6 +234,18 @@ def call_llm(query: str):
                         "time": null,
                         "noOfSeats": 3,
                         "seatNumbers": null
+                        }
+
+                        ---
+                        
+                        User: "A2, J2"
+                        Output:
+                        {
+                        "intent": "unknown",
+                        "movie": null,
+                        "time": null,
+                        "noOfSeats": null,
+                        "seatNumbers": ["A2","J2"]
                         }
 
                         ---
@@ -308,6 +334,12 @@ def generate_chatbot_response(o: OrchastratorResponse, q:str):
                                 2. movie_show_timetable:
                                 - Example tone:
                                 "Here are the available show timings."
+
+                                ---
+
+                                3. query_seats:
+                                - Example tone:
+                                "Here is the live seating layout for The Dark Knight. Pick any available seats or type them in chat like A1, A2."
 
                                 ---
 
