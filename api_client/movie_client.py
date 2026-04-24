@@ -71,3 +71,13 @@ class MovieClient:
         print(f"Getting booking for booking id: {bookingId}")
         response = self.session.get(url)
         return response.json()
+    
+    def clear_state(self,user_token,device_id):
+        url = f"{self.base_url}/state/clear"
+        print(f"Clearing state for user")
+        headers = {
+        "Authorization": f"Bearer {user_token}",
+        "X-Device-Id": device_id
+        }
+        response = self.session.post(url,headers=headers)
+        return response.json()

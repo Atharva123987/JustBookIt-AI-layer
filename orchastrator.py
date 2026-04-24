@@ -22,6 +22,7 @@ def get_state(user_token, device_id):
 def update_state(user_token, state, device_id):
     mov.update_user_state(state.to_dict(),user_token,device_id)
 
+
 def should_reset(old_intent, new_intent):
     INVALID = {"unknown", "small_talk", "unsupported_feature"}
 
@@ -56,6 +57,7 @@ class State:
             "movieId": self.movieId,
             "intent": self.intent,
             "showId": self.showId,
+            "bookingId": self.bookingId,
         }
 
     @staticmethod
@@ -176,8 +178,9 @@ def orchastrator(user_token, llmIntent, userInput, device_id) -> OrchastratorRes
             state.SetShowId(res2["data"][0]["shows"][0]["3D"][0]["id"])
 
         res = mov.book_movie(state.showId, state.noOfSeats, state.seatNumbers)
-        state = State()
-        update_state(user_token, state,device_id)
+        mov.clear_state(user_token,device_id)
+        state.bookingId = res["data"]["booking_id"]
+        update_state(user_token,state,device_id)
         return OrchastratorResponse(res, intent)
 
     if intent == "get_booking":
