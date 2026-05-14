@@ -160,22 +160,30 @@ def orchastrator(user_token, llmIntent, userInput, device_id) -> OrchastratorRes
         )
 
     if intent == "book_movie":
-        if (state.seatNumbers and len(state.seatNumbers) == 0) and not state.noOfSeats:
+        if (not state.seatNumbers) and not state.noOfSeats:
+            if not state.showId:
+                if not state.movieId:
+                    if not state.movie:
+                        return OrchastratorResponse({"missing_field": "movie"}, "need_more_info")
+                    res = mov.search_movies(state.movie)
+                    state.SetMovieId(res["data"]["movies"][0]["id"])
+                res1 = mov.get_movie_details(state.movieId)
+                res2 = mov.get_movie_shows(state.movieId)
+                update_state(user_token,state,device_id)
+                return OrchastratorResponse(
+                {"movie_details": res1, "show_timings": res2},
+                intent,
+                )
+            
+            if not state.showId:
+                return OrchastratorResponse({"missing_field": "showId"}, "need_more_info")
+               
             res = mov.get_seat_availability(state.showId)
+            update_state(user_token,state,device_id)
             return OrchastratorResponse(
             {**res,"available_seats": count_available_seats(res)},
             "query_seats",
-        )
-
-        if not state.movieId:
-            if not state.movie:
-                return OrchastratorResponse({"missing_field": "movie"}, "need_more_info")
-            res = mov.search_movies(state.movie)
-            state.SetMovieId(res["data"]["movies"][0]["id"])
-
-        if not state.showId:
-            res2 = mov.get_movie_shows(state.movieId)
-            state.SetShowId(res2["data"][0]["shows"][0]["3D"][0]["id"])
+            )
 
         res = mov.book_movie(state.showId, state.noOfSeats, state.seatNumbers)
         mov.clear_state(user_token,device_id)

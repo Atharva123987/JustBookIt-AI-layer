@@ -359,7 +359,8 @@ def generate_chatbot_response(o: OrchastratorResponse, q:str):
                                 movie → "Which movie would you like?"
                                 time → "What time would you prefer?"
                                 noOfSeats → "How many seats would you like to book?"
-
+                                showId → "Please select the show you would like to book"
+                                
                                 6. unknown:
                                 - If the user query is unclear or cannot be understood, respond politely and guide the user with examples of valid requests.
                                 - Keep the tone friendly and helpful.
