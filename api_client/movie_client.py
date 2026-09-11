@@ -18,7 +18,7 @@ class MovieClient:
         except Exception:
             data = response.text
 
-        if not response.ok:
+        if response.status_code == 500:
             raise Exception(f"HTTP {response.status_code}: {data}")
         return data
     
