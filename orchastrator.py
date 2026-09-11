@@ -135,7 +135,7 @@ def orchastrator(user_token, llmIntent, userInput, device_id) -> OrchastratorRes
         res1 = mov.get_movie_details(state.movieId)
         res2 = mov.get_movie_shows(state.movieId)
         if not res2["data"]:
-            return OrchastratorResponse(res2, "small_talk")
+            return OrchastratorResponse(res2, "movie_show_timetable")
         state.SetIntent("unknown")
         update_state(user_token, state,device_id)
 

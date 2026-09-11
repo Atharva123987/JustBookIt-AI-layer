@@ -378,7 +378,7 @@ def generate_chatbot_response(o: OrchastratorResponse, q:str):
 
                         If no shows are found:
                         "I couldn't find any shows for your selected movie. Try choosing another
-                        movie or a different date."
+                        movie."
 
                         If the user specifically requested a time/date and nothing is available:
                         "I couldn't find any shows matching that time. Try another time or date."
