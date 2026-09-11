@@ -1,1 +1,4 @@
 .env
+*.pyc
+/__pycache__
+/api_client/__pycache__
