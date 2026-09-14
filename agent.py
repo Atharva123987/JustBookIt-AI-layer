@@ -3,7 +3,7 @@ import datetime
 import requests
 import json
 from tools.date_normalization import normalize_datetime
-from api_client import movie_client
+from api_client import movie_client, embedding_client
 from orchastrator import orchastrator
 from orchastrator import OrchastratorResponse
 from dotenv import load_dotenv
@@ -20,18 +20,18 @@ def call_llm(query: str):
     """Send natural language query to LLM and get structured intent."""
     try:
         response = requests.post(
-        url="https://openrouter.ai/api/v1/chat/completions",
-        headers={
-            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-            "Content-Type": "application/json",
-        },
-        data=json.dumps({
-            "model": "openai/gpt-4o-mini",
-            "messages": [
+            url="https://openrouter.ai/api/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            data=json.dumps(
                 {
-                    "role": "system",
-                    "content": 
-                        """
+                    "model": LLM_MODEL,
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": """
                         You are an AI intent extraction assistant for a movie booking system.
 
                         Your job is to:
@@ -279,18 +279,20 @@ def call_llm(query: str):
                         }
                         
                         
-                """
-                },
-                {"role": "user", "content": query}
-            ],
-            "temperature": 0.2
-        })
-    )
+                """,
+                        },
+                        {"role": "user", "content": query},
+                    ],
+                    "temperature": 0.2,
+                }
+            ),
+        )
         return response.json()["choices"][0]["message"]["content"]
     except Exception as e:
         return f"⚠️ Error: {e}"
 
-def generate_chatbot_response(o: OrchastratorResponse, q:str):
+
+def generate_chatbot_response(o: OrchastratorResponse, q: str):
     """Ask LLM to turn raw API JSON into a natural language chatbot response."""
     try:
         response = requests.post(
@@ -617,7 +619,11 @@ def generate_chatbot_response(o: OrchastratorResponse, q:str):
             ),
         )
         data = response.json()
-        return data.get("choices", [{}])[0].get("message", {}).get("content", "Sorry, I couldn't generate a response.")
+        return (
+            data.get("choices", [{}])[0]
+            .get("message", {})
+            .get("content", "Sorry, I couldn't generate a response.")
+        )
     except Exception as e:
         return f"Error generating response: {e}"
 
@@ -644,26 +650,39 @@ def generate_chatbot_response(o: OrchastratorResponse, q:str):
 
 
 class ProcessQueryResponse:
-    def __init__(self, data=None,intent="",chat_response="Sorry there is something wrong, please try again!"):
+    def __init__(
+        self,
+        data=None,
+        intent="",
+        chat_response="Sorry there is something wrong, please try again!",
+    ):
         self.api_data = data
         self.intent = intent
         self.chat_response = chat_response
 
-async def process_query(query: str, user_token: str = None, userInput: dict = None,device_id:str = None) -> ProcessQueryResponse:
+
+async def process_query(
+    query: str, user_token: str = None, userInput: dict = None, device_id: str = None
+) -> ProcessQueryResponse:
     try:
         intent_json = call_llm(query)
         print(f"Raw LLM response: {intent_json}")
 
         # cleanup JSON
         if intent_json.startswith("```"):
-            intent_json = intent_json.strip("`").replace("json\n", "").replace("json", "", 1).strip()
+            intent_json = (
+                intent_json.strip("`")
+                .replace("json\n", "")
+                .replace("json", "", 1)
+                .strip()
+            )
         intent = json.loads(intent_json)
 
         # call backend APIs
         o = orchastrator(user_token, intent, userInput, device_id)
-        
+
         chat_response = generate_chatbot_response(o, query)
-            
+
         response = ProcessQueryResponse(
             intent=o.intent,
         )
@@ -676,3 +695,85 @@ async def process_query(query: str, user_token: str = None, userInput: dict = No
 
     except Exception as e:
         return f"⚠️ Error: {e}"
+
+
+def movie_to_text(movie):
+    """
+    Convert a movie document into natural-language text
+    that can be embedded for semantic search.
+    """
+
+    title = movie.get("title", "")
+    description = movie.get("description", "")
+
+    genres = movie.get("genres", [])
+    cast = movie.get("cast", [])
+
+    release_date = movie.get("release_date")
+
+    duration_ms = movie.get("duration", 0)
+    duration_minutes = duration_ms // 60000
+
+    genre_text = ", ".join(genres)
+    cast_text = ", ".join(cast)
+
+    release_text = ""
+
+    if release_date:
+        release_text = datetime.datetime.fromisoformat(
+            release_date.replace("Z", "+00:00")
+        ).strftime("%B %d, %Y")
+
+    return (
+        f"{title} is a {genre_text} movie "
+        f"released on {release_text}. "
+        f"It has a runtime of {duration_minutes} minutes. "
+        f"{description} "
+        f"The main cast includes {cast_text}."
+    )
+
+
+async def generate_embeddings():
+    res = mov.search_movies(limitResults=False)
+
+    total = len(res["data"]["movies"])
+
+    print(f"Found {total} movies")
+
+    processed = 0
+    movies = res["data"]["movies"]
+    for movie in movies:
+
+        movie_id = movie["id"]
+        title = movie.get("title", "Unknown")
+
+        print(f"\nProcessing: {title}")
+
+        text = movie_to_text(movie)
+
+        print(f"Text: {text}")
+
+        embedding = embedding_client.generate_embedding(text)
+
+        print(f"Embedding dimensions: {len(embedding)}")
+
+        knowledge_document = {
+            "source": "movie",
+            "source_id": movie_id,
+            "content": text,
+            "embedding": embedding,
+            "metadata": {
+                "title": title,
+                "genres": movie.get("genres", []),
+                "cast": movie.get("cast", []),
+                "release_date": movie.get("release_date"),
+                "duration": movie.get("duration"),
+            },
+        }
+
+        # Prevent duplicate documents
+        res = mov.create_or_update_knowledge_chunk(knowledge_document)
+        processed += 1
+
+        print(f"✓ Stored {processed}/{total}")
+    return processed

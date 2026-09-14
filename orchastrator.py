@@ -1,17 +1,21 @@
 from api_client import movie_client
 from tools.seats import count_available_seats
+
 state = {}
-mov =  movie_client.MovieClient()
+mov = movie_client.MovieClient()
+
 
 class OrchastratorResponse:
-    def __init__(self, data:dict, intent:str):
+    def __init__(self, data: dict, intent: str):
         self.data = data
         self.intent = intent
 
+
 def safe_get(obj, key):
-        if not obj:
-            return None
-        return obj.get(key) if isinstance(obj, dict) else getattr(obj, key, None)
+    if not obj:
+        return None
+    return obj.get(key) if isinstance(obj, dict) else getattr(obj, key, None)
+
 
 def get_state(user_token, device_id):
     res = mov.get_user_state(user_token, device_id)
@@ -20,7 +24,7 @@ def get_state(user_token, device_id):
 
 
 def update_state(user_token, state, device_id):
-    mov.update_user_state(state.to_dict(),user_token,device_id)
+    mov.update_user_state(state.to_dict(), user_token, device_id)
 
 
 def should_reset(old_intent, new_intent):
@@ -30,7 +34,8 @@ def should_reset(old_intent, new_intent):
         return False
 
     return old_intent and old_intent != new_intent
-    
+
+
 class State:
     def __init__(self):
         self.movie = None
@@ -41,13 +46,26 @@ class State:
         self.showId = None
         self.bookingId = None
 
-    def SetMovie(self, movie): self.movie = movie
-    def SetNoOfSeats(self, noOfSeats): self.noOfSeats = noOfSeats
-    def SetSeatNumbers(self, seatNumbers): self.seatNumbers = seatNumbers
-    def SetMovieId(self, movieId): self.movieId = movieId
-    def SetShowId(self, showId): self.showId = showId
-    def SetBookingId(self, bookingId): self.bookingId = bookingId
-    def SetIntent(self, intent): self.intent = intent
+    def SetMovie(self, movie):
+        self.movie = movie
+
+    def SetNoOfSeats(self, noOfSeats):
+        self.noOfSeats = noOfSeats
+
+    def SetSeatNumbers(self, seatNumbers):
+        self.seatNumbers = seatNumbers
+
+    def SetMovieId(self, movieId):
+        self.movieId = movieId
+
+    def SetShowId(self, showId):
+        self.showId = showId
+
+    def SetBookingId(self, bookingId):
+        self.bookingId = bookingId
+
+    def SetIntent(self, intent):
+        self.intent = intent
 
     def to_dict(self):
         return {
@@ -73,22 +91,23 @@ class State:
         s.intent = data.get("intent")
         s.showId = data.get("showId")
         s.bookingId = data.get("bookingId")
-        return s    
-    
+        return s
+
+
 def orchastrator(user_token, llmIntent, userInput, device_id) -> OrchastratorResponse:
-    state = get_state(user_token,device_id)
+    state = get_state(user_token, device_id)
 
     intentFromLLM = llmIntent.get("intent")
 
     # ---- extract fields ----
     movie = safe_get(userInput, "movie") or safe_get(llmIntent, "movie")
     noOfSeats = safe_get(userInput, "noOfSeats") or safe_get(llmIntent, "noOfSeats")
-    seatNumbers = safe_get(userInput, "seatNumbers") or safe_get(llmIntent, "seatNumbers")
+    seatNumbers = safe_get(userInput, "seatNumbers") or safe_get(
+        llmIntent, "seatNumbers"
+    )
     movieId = safe_get(userInput, "movieId")
     showId = safe_get(userInput, "showId")
     bookingId = safe_get(userInput, "bookingId")
-
-    
 
     INVALID_INTENTS = {"unknown", "small_talk", "unsupported_feature"}
 
@@ -98,26 +117,31 @@ def orchastrator(user_token, llmIntent, userInput, device_id) -> OrchastratorRes
 
     intent = state.intent
     print("state", state.__dict__)
-    
+
     # ---- update state ----
-    if movie: state.SetMovie(movie)
-    if noOfSeats: state.SetNoOfSeats(noOfSeats)
-    if seatNumbers: state.SetSeatNumbers(seatNumbers)
-    if movieId: state.SetMovieId(movieId)
-    if showId: state.SetShowId(showId)
+    if movie:
+        state.SetMovie(movie)
+    if noOfSeats:
+        state.SetNoOfSeats(noOfSeats)
+    if seatNumbers:
+        state.SetSeatNumbers(seatNumbers)
+    if movieId:
+        state.SetMovieId(movieId)
+    if showId:
+        state.SetShowId(showId)
 
     # ---- handle intents ----
     if intent in {"unknown", "small_talk", "unsupported_feature"}:
-        update_state(user_token, state,device_id)
+        update_state(user_token, state, device_id)
         return OrchastratorResponse({}, intent)
 
     if intent == "search_all_movies":
         res = mov.search_movies(state.movie)
-        update_state(user_token, state,device_id)
+        update_state(user_token, state, device_id)
         return OrchastratorResponse(res, intent)
 
     if intent == "need_more_info":
-        update_state(user_token, state,device_id)
+        update_state(user_token, state, device_id)
         return OrchastratorResponse(
             {"missing_fields": llmIntent.get("missing_fields")},
             intent,
@@ -126,8 +150,10 @@ def orchastrator(user_token, llmIntent, userInput, device_id) -> OrchastratorRes
     if intent == "movie_show_timetable":
         if not state.movieId:
             if not state.movie:
-                update_state(user_token, state,device_id)
-                return OrchastratorResponse({"missing_field": "movie"}, "need_more_info")
+                update_state(user_token, state, device_id)
+                return OrchastratorResponse(
+                    {"missing_field": "movie"}, "need_more_info"
+                )
 
             res = mov.search_movies(state.movie)
             state.SetMovieId(res["data"]["movies"][0]["id"])
@@ -137,7 +163,7 @@ def orchastrator(user_token, llmIntent, userInput, device_id) -> OrchastratorRes
         if not res2["data"]:
             return OrchastratorResponse(res2, "movie_show_timetable")
         state.SetIntent("unknown")
-        update_state(user_token, state,device_id)
+        update_state(user_token, state, device_id)
 
         return OrchastratorResponse(
             {"movie_details": res1, "show_timings": res2},
@@ -145,18 +171,18 @@ def orchastrator(user_token, llmIntent, userInput, device_id) -> OrchastratorRes
         )
 
     if intent == "query_seats":
-        
+
         if not state.showId:
-            update_state(user_token, state,device_id)
+            update_state(user_token, state, device_id)
             return OrchastratorResponse({"missing_field": "showId"}, "need_more_info")
 
         res = mov.get_seat_availability(state.showId)
 
         state.SetIntent("book_movie")
-        update_state(user_token, state,device_id)
+        update_state(user_token, state, device_id)
 
         return OrchastratorResponse(
-            {**res,"available_seats": count_available_seats(res)},
+            {**res, "available_seats": count_available_seats(res)},
             intent,
         )
 
@@ -165,39 +191,45 @@ def orchastrator(user_token, llmIntent, userInput, device_id) -> OrchastratorRes
             if not state.showId:
                 if not state.movieId:
                     if not state.movie:
-                        return OrchastratorResponse({"missing_field": "movie"}, "need_more_info")
+                        return OrchastratorResponse(
+                            {"missing_field": "movie"}, "need_more_info"
+                        )
                     res = mov.search_movies(state.movie)
                     state.SetMovieId(res["data"]["movies"][0]["id"])
                 res1 = mov.get_movie_details(state.movieId)
                 res2 = mov.get_movie_shows(state.movieId)
-                update_state(user_token,state,device_id)
+                update_state(user_token, state, device_id)
                 return OrchastratorResponse(
-                {"movie_details": res1, "show_timings": res2},
-                intent,
+                    {"movie_details": res1, "show_timings": res2},
+                    intent,
                 )
-            
+
             if not state.showId:
-                return OrchastratorResponse({"missing_field": "showId"}, "need_more_info")
-               
+                return OrchastratorResponse(
+                    {"missing_field": "showId"}, "need_more_info"
+                )
+
             res = mov.get_seat_availability(state.showId)
-            update_state(user_token,state,device_id)
+            update_state(user_token, state, device_id)
             return OrchastratorResponse(
-            {**res,"available_seats": count_available_seats(res)},
-            "query_seats",
+                {**res, "available_seats": count_available_seats(res)},
+                "query_seats",
             )
 
         res = mov.book_movie(state.showId, state.noOfSeats, state.seatNumbers)
-        mov.clear_state(user_token,device_id)
+        mov.clear_state(user_token, device_id)
         state.bookingId = res["data"]["booking_id"]
-        update_state(user_token,state,device_id)
+        update_state(user_token, state, device_id)
         return OrchastratorResponse(res, intent)
 
     if intent == "get_booking":
         if not bookingId:
-            return OrchastratorResponse({"missing_field": "bookingId"}, "need_more_info") 
+            return OrchastratorResponse(
+                {"missing_field": "bookingId"}, "need_more_info"
+            )
 
         res = mov.get_booking(bookingId)
         state.SetIntent("unknown")
-        update_state(user_token,state,device_id)
+        update_state(user_token, state, device_id)
         return OrchastratorResponse(res, intent)
     raise Exception(f"Intent '{intent}' unhandled")

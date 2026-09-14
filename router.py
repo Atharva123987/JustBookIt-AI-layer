@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Query,Request, Header,HTTPException
-from agent import process_query
+from agent import process_query,generate_embeddings
 from typing import Optional
 router = APIRouter()
 import json
@@ -26,3 +26,11 @@ async def ai_query(
     body = json.loads(raw_body) if raw_body else {}
 
     return await process_query(q, token, body,device_id)
+
+@router.patch("/embeddings")
+async def generate_movie_embeddings():
+    try:
+        count = await generate_embeddings()
+        return {"message":f"Embeddings generated for {count} movies"}
+    except Exception as e:
+        return f"⚠️ Error: {e}"
