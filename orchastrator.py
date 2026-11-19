@@ -1,4 +1,4 @@
-from api_client import movie_client
+from api_client import movie_client, embedding_client
 from tools.seats import count_available_seats
 
 state = {}
@@ -25,6 +25,18 @@ def get_state(user_token, device_id):
 
 def update_state(user_token, state, device_id):
     mov.update_user_state(state.to_dict(), user_token, device_id)
+
+
+def get_query_embedding(text):
+    """Embed the search text for vector search. Returns None on failure so the
+    search still runs as a plain text search."""
+    if not text:
+        return None
+    try:
+        return embedding_client.generate_embedding(text)
+    except Exception as e:
+        print(f"Embedding generation failed, using text search only: {e}")
+        return None
 
 
 def should_reset(old_intent, new_intent):
@@ -136,7 +148,8 @@ def orchastrator(user_token, llmIntent, userInput, device_id) -> OrchastratorRes
         return OrchastratorResponse({}, intent)
 
     if intent == "search_all_movies":
-        res = mov.search_movies(state.movie)
+        embeddings = get_query_embedding(state.movie)
+        res = mov.search_movies(state.movie, embeddings=embeddings)
         update_state(user_token, state, device_id)
         return OrchastratorResponse(res, intent)
 

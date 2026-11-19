@@ -25,13 +25,20 @@ class MovieClient:
             raise Exception(f"HTTP {response.status_code}: {data}")
         return data
 
-    def search_movies(self, searchText=None, limitResults=True):
+    def search_movies(self, searchText=None, limitResults=True, embeddings=None):
         url = f"{self.base_url}/movie"
         print(f"Searching for movies: {searchText}")
         query_params = {"searchText": searchText} if searchText else {}
         query_params["pageSize"] = 99 if not limitResults else None
 
-        response = self.session.get(url, params=query_params, timeout=10)
+        if embeddings:
+            # The embedding is too large for a query string, so it goes in a POST body.
+            # The backend returns text-search results first, then vector-search results.
+            response = self.session.post(
+                url, params=query_params, json={"embeddings": embeddings}, timeout=10
+            )
+        else:
+            response = self.session.get(url, params=query_params, timeout=10)
         return self._request(response)
 
     def get_movie_details(self, movieId: str):
