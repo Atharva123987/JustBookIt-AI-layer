@@ -1,8 +1,7 @@
 def count_available_seats(show_data):
     count = 0
 
-    data = (show_data or {}).get("data") or {}
-    rows = data.get("seat_rows") or []
+    rows = show_data["data"]["seat_rows"]
 
     for row in rows:
         for seat in row["seats"]:
