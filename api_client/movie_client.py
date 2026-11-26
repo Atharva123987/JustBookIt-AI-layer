@@ -31,39 +31,56 @@ class MovieClient:
         query_params = {"searchText": searchText} if searchText else {}
         query_params["pageSize"] = 99 if not limitResults else None
 
-        response = self.session.get(url, params=query_params, timeout=10)
+        response = self.session.get(url, params=query_params, timeout=15)
+        return self._request(response)
+
+    def search_movies_with_embedding(
+        self, searchText=None, embedding=None, limitResults=True
+    ):
+        """Text search + vector search. Text results come first, then vector results.
+        Response shape is the same as search_movies."""
+        url = f"{self.base_url}/movie/search"
+        print(f"Searching for movies (text + vector): {searchText}")
+        body = {
+            "searchText": searchText or "",
+            "embedding": embedding or [],
+        }
+        if not limitResults:
+            body["pageSize"] = 99
+
+        response = self.session.post(url, json=body, timeout=15)
         return self._request(response)
 
     def get_movie_details(self, movieId: str):
         url = f"{self.base_url}/movie/{movieId}"
         print(f"Searching for movie details for movie id: {movieId}")
-        response = self.session.get(url, timeout=10)
+        response = self.session.get(url, timeout=15)
         return self._request(response)
 
     def get_movie_shows(self, movieId: str):
         url = f"{self.base_url}/movie/{movieId}/shows"
         print(f"Searching for movie shows for movie id: {movieId}")
-        response = self.session.get(url, timeout=10)
+        response = self.session.get(url, timeout=15)
         return self._request(response)
 
     def get_seat_availability(self, showId: str):
         url = f"{self.base_url}/movie/seats/{showId}"
         print(f"Searching seat availibility for show id: {showId}")
-        response = self.session.get(url, timeout=10)
+        response = self.session.get(url, timeout=15)
         return self._request(response)
 
     def book_movie(self, showId: str, noOfSeats: int, seatNumbers: List[str]):
         url = f"{self.base_url}/movie/book"
         body = {"showId": showId, "noOfSeats": noOfSeats, "seatNumbers": seatNumbers}
         print(f"Booking movie for id: {showId}")
-        response = self.session.post(url, json=body, timeout=10)
+        response = self.session.post(url, json=body, timeout=15)
         return self._request(response)
 
     def get_user_state(self, user_token: str, device_id: str):
         url = f"{self.base_url}/state"
         print(f"Searching state for user")
         headers = {"Authorization": f"Bearer {user_token}", "X-Device-Id": device_id}
-        response = self.session.get(url, headers=headers, timeout=10)
+        response = self.session.get(url, headers=headers, timeout=15)
         return self._request(response)
 
     def update_user_state(self, state, user_token: str, device_id: str):
@@ -71,26 +88,26 @@ class MovieClient:
         print(f"Updating state for user")
         headers = {"Authorization": f"Bearer {user_token}", "X-Device-Id": device_id}
         response = self.session.post(
-            url, json=state, headers=headers, timeout=10
+            url, json=state, headers=headers, timeout=15
         )  # ✅ important
         return self._request(response)
 
     def get_booking(self, bookingId: str):
         url = f"{self.base_url}/movie/book/{bookingId}"
         print(f"Getting booking for booking id: {bookingId}")
-        response = self.session.get(url, timeout=10)
+        response = self.session.get(url, timeout=15)
         return self._request(response)
 
     def clear_state(self, user_token, device_id):
         url = f"{self.base_url}/state/clear"
         print(f"Clearing state for user")
         headers = {"Authorization": f"Bearer {user_token}", "X-Device-Id": device_id}
-        response = self.session.delete(url, headers=headers, timeout=10)
+        response = self.session.delete(url, headers=headers, timeout=15)
         return self._request(response)
 
     def create_or_update_knowledge_chunk(self, chunk):
         url = f"{self.base_url}/knowledge"
         print(f"Creating/Updating knowledge chunk")
 
-        response = self.session.patch(url, json=chunk, timeout=10)
+        response = self.session.patch(url, json=chunk, timeout=15)
         return self._request(response)
