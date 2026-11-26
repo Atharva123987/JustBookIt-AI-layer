@@ -245,8 +245,19 @@ def orchastrator(user_token, llmIntent, userInput, device_id) -> OrchastratorRes
             )
 
         res = mov.book_movie(state.showId, state.noOfSeats, state.seatNumbers)
+        booking = (res or {}).get("data")
+        if not booking:
+            # Booking rejected (e.g. seat already reserved/booked): keep movie/show
+            # so the user can pick other seats, but drop the rejected seat choice.
+            state.SetSeatNumbers(None)
+            state.SetNoOfSeats(None)
+            update_state(user_token, state, device_id)
+            return OrchastratorResponse(
+                res or {"data": None, "error": "booking failed"}, intent
+            )
+
         mov.clear_state(user_token, device_id)
-        state.bookingId = res["data"]["booking_id"]
+        state.bookingId = booking["booking_id"]
         update_state(user_token, state, device_id)
         return OrchastratorResponse(res, intent)
 
