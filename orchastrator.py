@@ -177,6 +177,9 @@ def orchastrator(user_token, llmIntent, userInput, device_id) -> OrchastratorRes
             return OrchastratorResponse({"missing_field": "showId"}, "need_more_info")
 
         res = mov.get_seat_availability(state.showId)
+        if not res or not res.get("data"):
+            # Show doesn't exist / isn't available: surface the BE error, don't advance to booking
+            return OrchastratorResponse(res or {"data": None, "error": "show not available"}, intent)
 
         state.SetIntent("book_movie")
         update_state(user_token, state, device_id)
@@ -210,6 +213,10 @@ def orchastrator(user_token, llmIntent, userInput, device_id) -> OrchastratorRes
                 )
 
             res = mov.get_seat_availability(state.showId)
+            if not res or not res.get("data"):
+                return OrchastratorResponse(
+                    res or {"data": None, "error": "show not available"}, "query_seats"
+                )
             update_state(user_token, state, device_id)
             return OrchastratorResponse(
                 {**res, "available_seats": count_available_seats(res)},
