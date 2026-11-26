@@ -1,4 +1,4 @@
-from api_client import movie_client
+from api_client import movie_client, embedding_client
 from tools.seats import count_available_seats
 
 state = {}
@@ -25,6 +25,34 @@ def get_state(user_token, device_id):
 
 def update_state(user_token, state, device_id):
     mov.update_user_state(state.to_dict(), user_token, device_id)
+
+
+def _is_movie_search_response(res):
+    data = res.get("data") if isinstance(res, dict) else None
+    return isinstance(data, dict) and isinstance(data.get("movies"), list)
+
+
+def search_movies_with_vectors(search_text):
+    """Search movies by text and by embedding similarity.
+    Falls back to the text-only search if the embedding can't be generated
+    or the combined search fails, so the response is never affected."""
+    if not search_text:
+        return mov.search_movies(search_text)
+    try:
+        embedding = embedding_client.generate_embedding(search_text)
+    except Exception as e:
+        print(f"Embedding generation failed, falling back to text search: {e}")
+        return mov.search_movies(search_text)
+
+    try:
+        res = mov.search_movies_with_embedding(search_text, embedding)
+    except Exception as e:
+        print(f"Vector search request failed, falling back to text search: {e}")
+        return mov.search_movies(search_text)
+    if not _is_movie_search_response(res):
+        print(f"Vector search returned an error, falling back to text search: {res}")
+        return mov.search_movies(search_text)
+    return res
 
 
 def should_reset(old_intent, new_intent):
@@ -136,7 +164,7 @@ def orchastrator(user_token, llmIntent, userInput, device_id) -> OrchastratorRes
         return OrchastratorResponse({}, intent)
 
     if intent == "search_all_movies":
-        res = mov.search_movies(state.movie)
+        res = search_movies_with_vectors(state.movie)
         update_state(user_token, state, device_id)
         return OrchastratorResponse(res, intent)
 
